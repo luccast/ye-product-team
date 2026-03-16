@@ -2,7 +2,7 @@
 
 **gstack turns Claude Code from one generic assistant into a team of specialists you can summon on demand.**
 
-Nine opinionated workflow skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Plan review, code review, one-command shipping, browser automation, QA testing, and engineering retrospectives — all as slash commands.
+Ten opinionated workflow skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Plan review, code review, one-command shipping, browser automation, QA testing, and engineering retrospectives — all as slash commands.
 
 ### Without gstack
 
@@ -19,6 +19,7 @@ Nine opinionated workflow skills for [Claude Code](https://docs.anthropic.com/en
 |-------|------|--------------|
 | `/plan-ceo-review` | Founder / CEO | Rethink the problem. Find the 10-star product hiding inside the request. |
 | `/plan-eng-review` | Eng manager / tech lead | Lock in architecture, data flow, diagrams, edge cases, and tests. |
+| `/plan-design-review` | Senior product designer | Evaluate UX flows, IA, design system consistency, accessibility, responsive design, and interaction states. |
 | `/review` | Paranoid staff engineer | Find the bugs that pass CI but blow up in production. Triages Greptile review comments. |
 | `/ship` | Release engineer | Sync main, run tests, resolve Greptile reviews, push, open PR. For a ready branch, not for deciding what to build. |
 | `/browse` | QA engineer | Give the agent eyes. It logs in, clicks through your app, takes screenshots, catches breakage. Full QA pass in 60 seconds. |
@@ -49,6 +50,13 @@ You:   /plan-eng-review
 
 Claude: [Architecture diagram, state machine for upload → classify → enrich
         → draft pipeline, async job boundaries, failure modes, test matrix]
+
+You:   /plan-design-review
+
+Claude: Missing loading state during enrichment — user sees nothing for 3-5s.
+        Empty state for "no price comps found" is undefined. Upload touch
+        target is 28px on mobile (needs 44px). Keyboard user can't reach
+        the "remove photo" button. [Writes design review summary for /qa]
 
 You:   [exit plan mode, implement the plan]
 
@@ -104,11 +112,11 @@ This is the setup I use. One person, ten parallel agents, each with the right co
 
 Open Claude Code and paste this. Claude will do the rest.
 
-> Install gstack: run `git clone https://github.com/garrytan/gstack.git ~/.claude/skills/gstack && cd ~/.claude/skills/gstack && ./setup` then add a "gstack" section to CLAUDE.md that says to use the /browse skill from gstack for all web browsing, never use mcp\_\_claude-in-chrome\_\_\* tools, and lists the available skills: /plan-ceo-review, /plan-eng-review, /review, /ship, /browse, /qa, /qa-only, /setup-browser-cookies, /retro. Then ask the user if they also want to add gstack to the current project so teammates get it.
+> Install gstack: run `git clone https://github.com/garrytan/gstack.git ~/.claude/skills/gstack && cd ~/.claude/skills/gstack && ./setup` then add a "gstack" section to CLAUDE.md that says to use the /browse skill from gstack for all web browsing, never use mcp\_\_claude-in-chrome\_\_\* tools, and lists the available skills: /plan-ceo-review, /plan-eng-review, /plan-design-review, /review, /ship, /browse, /qa, /qa-only, /setup-browser-cookies, /retro. Then ask the user if they also want to add gstack to the current project so teammates get it.
 
 ### Step 2: Add to your repo so teammates get it (optional)
 
-> Add gstack to this project: run `cp -Rf ~/.claude/skills/gstack .claude/skills/gstack && rm -rf .claude/skills/gstack/.git && cd .claude/skills/gstack && ./setup` then add a "gstack" section to this project's CLAUDE.md that says to use the /browse skill from gstack for all web browsing, never use mcp\_\_claude-in-chrome\_\_\* tools, lists the available skills: /plan-ceo-review, /plan-eng-review, /review, /ship, /browse, /qa, /setup-browser-cookies, /retro, and tells Claude that if gstack skills aren't working, run `cd .claude/skills/gstack && ./setup` to build the binary and register skills.
+> Add gstack to this project: run `cp -Rf ~/.claude/skills/gstack .claude/skills/gstack && rm -rf .claude/skills/gstack/.git && cd .claude/skills/gstack && ./setup` then add a "gstack" section to this project's CLAUDE.md that says to use the /browse skill from gstack for all web browsing, never use mcp\_\_claude-in-chrome\_\_\* tools, lists the available skills: /plan-ceo-review, /plan-eng-review, /plan-design-review, /review, /ship, /browse, /qa, /setup-browser-cookies, /retro, and tells Claude that if gstack skills aren't working, run `cd .claude/skills/gstack && ./setup` to build the binary and register skills.
 
 Real files get committed to your repo (not a submodule), so `git clone` just works. The binary and node\_modules are gitignored — teammates just need to run `cd .claude/skills/gstack && ./setup` once to build (or `/browse` handles it automatically on first use).
 
@@ -254,6 +262,41 @@ That is `/plan-eng-review`.
 
 Not "make the idea smaller."
 **Make the idea buildable.**
+
+---
+
+## `/plan-design-review`
+
+This is my **product designer mode**.
+
+Once the product vision and engineering plan are solid, there is still a class of problems that neither `/plan-ceo-review` nor `/plan-eng-review` catches: the experience itself. How does the user actually move through this feature? What happens when the form is empty? When the list has 10,000 items? When someone navigates with a keyboard? When the screen is 375px wide?
+
+`/plan-design-review` evaluates plans through the lens of a senior product designer. It is not about code quality or system architecture — those are covered. It is about the six things that make the difference between software that works and software that feels right:
+
+* **UX flows** — Map every user journey. Find the dead ends, the cognitive overload, the missing back buttons, the abandoned states nobody designed for.
+* **Information architecture** — Does the structure match how users think? Are labels clear? Does search work at scale?
+* **Design system consistency** — Flag hardcoded colors, duplicate components, inconsistent patterns. Every value should come from a token.
+* **Accessibility** — WCAG 2.1 AA is the floor. Contrast, keyboard nav, screen reader support, focus management, touch targets. Non-negotiable.
+* **Interaction design & responsive behavior** — Every interaction needs a trigger, action, and feedback. Every component needs to work at every breakpoint. Hover-dependent UIs break on touch.
+* **Visual hierarchy & content** — One primary CTA per screen. Designed empty states. Specific error messages. Action-oriented microcopy.
+
+### Example
+
+Take the same listing app. The CEO review found the 10-star product. The eng review locked in the architecture. Now `/plan-design-review` asks:
+
+* When the seller uploads a photo and enrichment is running, what do they see? A spinner? A skeleton? Nothing?
+* If product identification fails, does the error message tell them what to do next, or just say "Error"?
+* The listing form has 8 fields auto-filled — is that overwhelming? Should we use progressive disclosure?
+* Does the photo upload work on mobile? What's the touch target size on the "remove photo" button?
+* Can a screen reader user complete the entire listing flow?
+* What does the listing page look like when there are no photos? No description? No price comps?
+
+It writes a design review summary to `~/.gstack/projects/` that `/qa` and `/qa-only` consume as test input — so the accessibility gaps, missing states, and responsive breakpoints you identified in review become concrete things the QA pass checks.
+
+That is `/plan-design-review`.
+
+Not "does it compile."
+**Does it feel right.**
 
 ---
 
@@ -614,7 +657,7 @@ Or set `auto_upgrade: true` in `~/.gstack/config.yaml` to upgrade automatically 
 
 Paste this into Claude Code:
 
-> Uninstall gstack: remove the skill symlinks by running `for s in browse plan-ceo-review plan-eng-review review ship retro qa qa-only setup-browser-cookies; do rm -f ~/.claude/skills/$s; done` then run `rm -rf ~/.claude/skills/gstack` and remove the gstack section from CLAUDE.md. If this project also has gstack at .claude/skills/gstack, remove it by running `for s in browse plan-ceo-review plan-eng-review review ship retro qa qa-only setup-browser-cookies; do rm -f .claude/skills/$s; done && rm -rf .claude/skills/gstack` and remove the gstack section from the project CLAUDE.md too.
+> Uninstall gstack: remove the skill symlinks by running `for s in browse plan-ceo-review plan-eng-review plan-design-review review ship retro qa qa-only setup-browser-cookies; do rm -f ~/.claude/skills/$s; done` then run `rm -rf ~/.claude/skills/gstack` and remove the gstack section from CLAUDE.md. If this project also has gstack at .claude/skills/gstack, remove it by running `for s in browse plan-ceo-review plan-eng-review review ship retro qa qa-only setup-browser-cookies; do rm -f .claude/skills/$s; done && rm -rf .claude/skills/gstack` and remove the gstack section from the project CLAUDE.md too.
 
 ## Development
 
